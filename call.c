@@ -16,6 +16,8 @@
 const char *HD = "HD";
 int match_filename_inode(int, int, char*);
 inode* read_inode(int,int);
+
+
 int open_t(char *pathname)
 {
 	int inode_number;
@@ -63,63 +65,65 @@ int read_t(int inode_number, int offset, void *buf, int count)
         inode* ip;
         ip = read_inode(fd,inode_number);
         //printf("The block information:\nblock number:%d\n direct_block:%d %d\n indirect_blk:%d\n",ip->blk_num,ip->direct_blk[0],ip->direct_blk[1],ip->indirect_blk);
-	
+	DIR_NODE* p_block = (DIR_NODE*)malloc(BLOCK_SIZE);
 
          printf("a:%d\n",a);
 	 while(count>0){
             if(a==0){
-
+		strcpy(p_block[0].dir,"");
 		printf("count before:%d a before:%d b before:%d\n",count,a,b);
 	        block_number = ip->direct_blk[0];
-		DIR_NODE* p_block = (DIR_NODE*)malloc(BLOCK_SIZE);
 
                 currpos=lseek(fd, DATA_OFFSET + block_number * BLOCK_SIZE+b, SEEK_SET);
 		if(count<=4096-b){
-                    read(fd,p_block,count);
-		    read_bytes+=count;
+		    read_bytes+=read(fd,p_block,count);
 		    count=0;
 		}
 		else{
-                read(fd,p_block,4096-b);
-		read_bytes+=(4096-b);
-		count-=(4096-b);
+
+		    read_bytes+=read(fd,p_block,4096-b);
+		    count-=(4096-b);
 		}
+		strcat((char*)buf,p_block[0].dir);
 		if(count>0){
 		a++;
 		}
 		b=0;
+
 		printf("First direct block\n");
 		printf("count later:%d a later:%d b later:%d\n",count,a,b);
-	//	printf("content read:%s\n",p_block[0].dir);
-                free(p_block);
+		//printf("content read:%s\n",p_block[0].dir);
 	    }
 	    if(a==1){
 		block_number = ip->direct_blk[1];
-		DIR_NODE* p_block = (DIR_NODE*)malloc(BLOCK_SIZE);
-                
+          //      printf("content before empty:%s\n",p_block[0].dir);
+		strcpy(p_block[0].dir,"");
+
+	//	printf("content after empty:%s\n",p_block[0].dir);
                 currpos=lseek(fd, DATA_OFFSET + block_number * BLOCK_SIZE+b, SEEK_SET);
 		//p_block[0].dir=" "
 		//;
 		printf("----------count before:%d a before:%d b before:%d------------\n",count,a,b);
 	//	printf("content before read:%s\n**********************",p_block[0].dir);
                 if(count<=4096-b){
-                    read(fd,p_block,count);
-                    read_bytes+=count;
+
+		    read_bytes+=read(fd,p_block,count);
                     count=0;
                 }
                 else{
-                read(fd,p_block,4096-b);
-                read_bytes+=(4096-b);
-                count-=(4096-b);
+                        read_bytes+=read(fd,p_block,4096-b);
+
+			count-=(4096-b);
                 }
+		strcat(buf,p_block[0].dir);
+
                 if(count>0){
                 a++;
                 }
                 b=0;
                  printf("second direct block\n");
                 printf("count later:%d a later:%d b later:%d\n",count,a,b);
-          //      printf("content read:%s\n",p_block[0].dir);
-                free(p_block);
+                //printf("content read:%s\n",p_block[0].dir);
 		
 	    }
 
@@ -127,10 +131,8 @@ int read_t(int inode_number, int offset, void *buf, int count)
                 printf("INdirect blocks\n");
 		printf("Block_number in total:%d\n",ip->blk_num);
 		int current_blk_num = ip->blk_num-2;
-		for(int i=0; i<current_blk_num;i++){
-                    
-		}
-		block_number = ip->indirect_blk;
+                block_number = ip->indirect_blk;
+
 		DIR_NODE* p_block = (DIR_NODE*)malloc(BLOCK_SIZE);
                 DIR_NODE* indirect_blk_dir = (DIR_NODE*)malloc(BLOCK_SIZE);
  
@@ -143,16 +145,18 @@ int read_t(int inode_number, int offset, void *buf, int count)
 		    }
 		    
 		    if(count<=4096-b){
-                        read(fd,p_block,count);
-                        read_bytes+=count;
-                        count=0;
+                                             
+		            read_bytes+=read(fd,p_block,count);
+			    count=0;
                 }
                     else{
-                read(fd,p_block,4096-b);
-                read_bytes+=(4096-b);
-                count-=(4096-b);
+                            read_bytes+=read(fd,p_block,4096-b);
+
+			    count-=(4096-b);
                 }
                 printf("count later:%d \n",count);
+		strcat(buf,p_block[0].dir);
+
                 if(count==0) break;
                 }
 
@@ -166,7 +170,9 @@ int read_t(int inode_number, int offset, void *buf, int count)
         int currpos=lseek(fd, DATA_OFFSET + block_number * BLOCK_SIZE, SEEK_SET);
         read(fd, p_block, BLOCK_SIZE);
 	printf("p_block info: %s\n",p_block[2].dir);
-*/
+        */
+
+	 //printf("Content in buf:%s\n, sizeof buf:%d\n",(char*)buf,strlen(buf));
 	return read_bytes; 
 }
 
@@ -218,4 +224,6 @@ inode* read_inode(int fd, int inode_number){
 	}
 	return ip;
 }
+
+
 // you are allowed to create any auxiliary functions that can help your implementation. But only “open_t()” and "read_t()" are allowed to call these auxiliary functions.
